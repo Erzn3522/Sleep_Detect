@@ -1,7 +1,26 @@
 import cv2
 import time
 import os
-import shutil
+
+class TimeController:
+     def set_timer(self, duration, unit):
+        if unit == "seconds":
+            seconds = duration
+        elif unit == "minutes":
+            seconds = duration * 60
+        elif unit == "hours":
+            seconds = duration * 3600
+        else:
+            print("Invalid unit. Please choose 'seconds', 'minutes', or 'hours'.")
+            return
+
+        start_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        print(f"Timer started at {start_time} for {duration} {unit}.")
+
+        time.sleep(seconds)
+
+        end_time = time.strftime("%Y-%m-%d %H:%M:%S", time.localtime())
+        print(f"Timer completed at {end_time}.")
 
 class FolderController:
     def __init__(self, folder_path, max_size_gb):
@@ -35,7 +54,7 @@ class VideoStream:
         return None
 
 class FrameProcessor:
-    def __init__(self, max_buffer_size=150, area_threshold=500):
+    def __init__(self, max_buffer_size=150, area_threshold=1000):
         self.prev_frame = None
         self.back_frame_buffer = []
         self.new_frame_buffer = []
@@ -57,56 +76,54 @@ class FrameProcessor:
         thresh = cv2.threshold(frame_diff, 30, 255, cv2.THRESH_BINARY)[1]
         thresh = cv2.dilate(thresh, None, iterations=2)
         thresh = cv2.erode(thresh, None, iterations=2)
-        
+        cv2.imshow("Movement ", thresh)
         contours, _ = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         movement_detected = False
         
         for contour in contours:
             if cv2.contourArea(contour) > self.area_threshold:
+                print(cv2.contourArea(contour))
                 movement_detected = True
                 break
-
-        if len(self.back_frame_buffer) > self.max_buffer_size:
-            self.back_frame_buffer = self.back_frame_buffer[-self.max_buffer_size:]
-
-        self.back_frame_buffer.append(frame.copy())
 
         if movement_detected:
             self.new_frame_buffer.append(frame.copy())
         else:
-            if self.timer_start == 0 and not (len(self.back_frame_buffer) < self.max_buffer_size):
-                self.timer_start = time.time()  # Start the timer
-         
-            if time.time() - self.timer_start <= 5:
-                # If the elapsed time is 5 seconds or more, 
-                # continue the appending new frames
-                self.new_frame_buffer.append(frame.copy())
-            else:
-                if len(self.new_frame_buffer) > 10:
-                    self.back_frame_buffer.extend(self.new_frame_buffer)
-                    self.new_frame_buffer.clear()
-                    self.timer_start = 0
-                    self.video_record_enabled = True
+            if len(self.new_frame_buffer) > 60:
+                self.back_frame_buffer.extend(self.new_frame_buffer)
+                self.new_frame_buffer.clear()
+                self.video_record_enabled = True
+
+            self.back_frame_buffer.append(frame.copy())
+
+            if len(self.back_frame_buffer) > self.max_buffer_size:
+                self.back_frame_buffer = self.back_frame_buffer[-self.max_buffer_size:]
              
         self.prev_frame = gray
         return self.video_record_enabled
 
 class VideoProcessor:
-    def __init__(self, video_source=0, output_file='merged_frames.mp4'):
+    def __init__(self, video_source=0, output_file='documents/merged_frames.mp4'):
         self.video_stream = VideoStream(video_source)
         self.frame_processor = FrameProcessor()
         self.folder_controller = FolderController("/Users/abdullaherzin/Documents/Projects/Sleep_Detect", 20)
+        self.time_controller = TimeController()
         self.output_file = output_file
         self.video_out = None
         self.record_count = 0
+        
     
     def __del__(self):
         if self.video_out is not None:
             self.video_out.release()
     
     def run(self):
+        started_first_time = True
         while True:
+            if started_first_time:
+                # self.time_controller.set_timer(1, 'minutes')
+                started_first_time = False
             frame = self.video_stream.read_frame()
             if frame is None:
                 break
@@ -118,8 +135,6 @@ class VideoProcessor:
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 cv2.destroyAllWindows()
                 break
-        
-        # self.merge_and_save_frames()
     
     def merge_and_save_frames(self):
         back_frame_buffer = self.frame_processor.back_frame_buffer
@@ -132,7 +147,7 @@ class VideoProcessor:
             
             for frame in back_frame_buffer:
                 self.video_out.write(frame)
-            
+            self.frame_processor.back_frame_buffer.clear()
             self.video_out.release()
 
     def record_name_creator(self, record_file_name):
