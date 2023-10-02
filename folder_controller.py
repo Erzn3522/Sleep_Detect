@@ -18,3 +18,12 @@ class FolderController:
             # Stop the script
             print(f"Folder size exceeded {self.max_size_gb} GB. Stopping the script.")
             exit()
+            
+    def record_name_creator(self, record_file_name):
+        # Split the filename into the base name and extension
+        base_name, extension = record_file_name.rsplit('.', 1)
+        
+        # Add the number at the end of the base name
+        new_filename = f"{base_name}_{self.record_counter()}.{extension}"
+        return new_filename
+        

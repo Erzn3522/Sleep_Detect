@@ -48,7 +48,7 @@ class VideoProcessor:
         if len(back_frame_buffer) > 0:
             height, width, _ = back_frame_buffer[0].shape
             fourcc = cv2.VideoWriter_fourcc(*'mp4v')
-            file_name = self.record_name_creator(self.output_file)
+            file_name = self.folder_controller.record_name_creator(self.output_file)
             
             # If the file doesn't exist, create it and write some initial content
             if not os.path.exists(self.documents_path):
@@ -61,13 +61,7 @@ class VideoProcessor:
             self.frame_processor.back_frame_buffer.clear()
             self.video_out.release()
 
-    def record_name_creator(self, record_file_name):
-        # Split the filename into the base name and extension
-        base_name, extension = record_file_name.rsplit('.', 1)
-        
-        # Add the number at the end of the base name
-        new_filename = f"{base_name}_{self.record_counter()}.{extension}"
-        return new_filename
+    
     
     def record_counter(self):
         self.record_count += 1
