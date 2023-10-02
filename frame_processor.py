@@ -11,6 +11,16 @@ class FrameProcessor:
         self.video_record_enabled = False
         self.timer_start = 0
     
+    def _movement_detector(self, contours):
+        for contour in contours:
+            if cv2.contourArea(contour) > self.area_threshold:
+                print(cv2.contourArea(contour))
+                movement_detected = True
+                break
+            else:
+                movement_detected = False
+        return movement_detected
+    
     def process_frame(self, frame):
         self.video_record_enabled = False
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
@@ -28,12 +38,8 @@ class FrameProcessor:
         contours, _ = cv2.findContours(thresh.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
         
         movement_detected = False
+        movement_detected = self._movement_detector(contours)
         
-        for contour in contours:
-            if cv2.contourArea(contour) > self.area_threshold:
-                print(cv2.contourArea(contour))
-                movement_detected = True
-                break
 
         if movement_detected:
             self.new_frame_buffer.append(frame.copy())
