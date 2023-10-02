@@ -7,7 +7,7 @@ from time_controller import TimeController
 
 
 class VideoProcessor:
-    def __init__(self, video_source=0, output_file='Documents/merged_frames.mp4'):
+    def __init__(self, video_source=0, output_file='merged_frames.mp4'):
         self.video_stream = VideoStream(video_source)
         self.frame_processor = FrameProcessor()
         self.documents_path = "Documents"
@@ -51,10 +51,10 @@ class VideoProcessor:
             file_name = self.record_name_creator(self.output_file)
             
             # If the file doesn't exist, create it and write some initial content
-            if not os.path.exists(file_name):
+            if not os.path.exists(self.documents_path):
                 os.makedirs(self.documents_path)
-            
-            self.video_out = cv2.VideoWriter(file_name, fourcc, 20.0, (width, height))
+            combined_file_name = os.path.join(self.documents_path, file_name)
+            self.video_out = cv2.VideoWriter(combined_file_name, fourcc, 20.0, (width, height))
             
             for frame in back_frame_buffer:
                 self.video_out.write(frame)
