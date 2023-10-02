@@ -3,3 +3,5 @@
 /test
 **/merged_frames_*
 .*
+/Documents
+/__pycache__/*
