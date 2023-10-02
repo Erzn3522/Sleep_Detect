@@ -1,3 +1,5 @@
+import cv2
+
 class VideoStream:
     def __init__(self, video_source=0):
         self.video = cv2.VideoCapture(video_source)
